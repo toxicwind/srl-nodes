@@ -6,16 +6,18 @@ import re
 import random
 import itertools
 from functools import reduce
+import emoji
 
 
 class AnyType(str):
+
     def __ne__(self, __value: object) -> bool:
         return False
 
 
 any_typ = AnyType("*")
 
-nlp = spacy.load('en_core_web_sm')
+nlp = spacy.load("en_core_web_sm")
 
 
 class SrlConditionalInterrupt:
@@ -25,13 +27,15 @@ class SrlConditionalInterrupt:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "interrupt": ("BOOLEAN", {"forceInput": True}),
-                "inp": (any_typ,),
+                "interrupt": ("BOOLEAN", {
+                    "forceInput": True
+                }),
+                "inp": (any_typ, ),
             },
         }
 
-    RETURN_TYPES = (any_typ,)
-    RETURN_NAMES = ("output",)
+    RETURN_TYPES = (any_typ, )
+    RETURN_NAMES = ("output", )
     FUNCTION = "doit"
     CATEGORY = "utils"
 
@@ -39,7 +43,7 @@ class SrlConditionalInterrupt:
         if interrupt:
             nodes.interrupt_processing()
 
-        return (inp,)
+        return (inp, )
 
 
 class SrlFormatString:
@@ -52,27 +56,29 @@ class SrlFormatString:
                 "format": (
                     "STRING",
                     {
-                        "multiline": False,
-                        "default": "first input via str(): {}, second input via repr(): {!r}, third input by index: {2}, fifth input by name: {in4}",
+                        "multiline":
+                        False,
+                        "default":
+                        "first input via str(): {}, second input via repr(): {!r}, third input by index: {2}, fifth input by name: {in4}",
                     },
                 ),
             },
             "optional": {
-                "in0": (any_typ,),
-                "in1": (any_typ,),
-                "in2": (any_typ,),
-                "in3": (any_typ,),
-                "in4": (any_typ,),
+                "in0": (any_typ, ),
+                "in1": (any_typ, ),
+                "in2": (any_typ, ),
+                "in3": (any_typ, ),
+                "in4": (any_typ, ),
             },
         }
 
-    RETURN_TYPES = ("STRING",)
+    RETURN_TYPES = ("STRING", )
     FUNCTION = "doit"
     CATEGORY = "utils"
 
     def doit(self, format, **kwargs):
         # Allow referencing arguments both by name and index.
-        return (format.format(*kwargs.values(), **kwargs),)
+        return (format.format(*kwargs.values(), **kwargs), )
 
 
 class SrlEval:
@@ -100,15 +106,15 @@ class SrlEval:
                 ),
             },
             "optional": {
-                "arg0": (any_typ,),
-                "arg1": (any_typ,),
-                "arg2": (any_typ,),
-                "arg3": (any_typ,),
-                "arg4": (any_typ,),
+                "arg0": (any_typ, ),
+                "arg1": (any_typ, ),
+                "arg2": (any_typ, ),
+                "arg3": (any_typ, ),
+                "arg4": (any_typ, ),
             },
         }
 
-    RETURN_TYPES = (any_typ,)
+    RETURN_TYPES = (any_typ, )
     FUNCTION = "doit"
     CATEGORY = "utils"
 
@@ -135,8 +141,7 @@ class SrlEval:
         defaults = {
             parameter_name: default
             for parameter_name, default in zip(
-                parameter_names[-len(default_list):], default_list
-            )
+                parameter_names[-len(default_list):], default_list)
         }
 
         # We handle substituting default values ourselves in order to support *args
@@ -150,11 +155,12 @@ class SrlEval:
             unnamed_inputs = input_names[len(argspec.args):]
             # I considered requiring the remaining inputs to be contiguous, but I don't think it's helpful.
             args += [
-                kw[input_name] for input_name in unnamed_inputs if input_name in kw
+                kw[input_name] for input_name in unnamed_inputs
+                if input_name in kw
             ]
 
         ret = func(*args)
-        return (ret,)
+        return (ret, )
 
 
 class SrlFilterImageList:
@@ -164,18 +170,20 @@ class SrlFilterImageList:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "images": ("IMAGE",),
-                "keep": ("BOOLEAN", {"forceInput": True}),
+                "images": ("IMAGE", ),
+                "keep": ("BOOLEAN", {
+                    "forceInput": True
+                }),
             }
         }
 
-    RETURN_TYPES = ("IMAGE",)
+    RETURN_TYPES = ("IMAGE", )
     INPUT_IS_LIST = True
-    OUTPUT_IS_LIST = (True,)
+    OUTPUT_IS_LIST = (True, )
     FUNCTION = "doit"
 
     def doit(self, images, keep):
-        return ([im for im, k in zip(images, keep) if k],)
+        return ([im for im, k in zip(images, keep) if k], )
 
 
 class SrlRandomizeAndFormatString:
@@ -189,89 +197,101 @@ class SrlRandomizeAndFormatString:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "input_string": ("STRING", {"multiline": False}),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF}),
+                "input_string": ("STRING", {
+                    "multiline": False
+                }),
+                "seed": ("INT", {
+                    "default": 0,
+                    "min": 0,
+                    "max": 0xFFFFFFFFFFFFFFFF
+                }),
             },
         }
 
-    RETURN_TYPES = ("STRING",)
+    RETURN_TYPES = ("STRING", )
     FUNCTION = "doit"
     CATEGORY = "utils"
 
     def remove_stop_words(self, text):
         """Removes stop words from the input text using spaCy."""
-        tokens = text.split(',')
+        tokens = text.split(",")
         filtered_tokens = []
         for token in tokens:
             doc = nlp(token)
-            filtered_token = ' '.join([t.text for t in doc if not t.is_stop])
+            filtered_token = " ".join([t.text for t in doc if not t.is_stop])
             filtered_tokens.append(filtered_token.strip())
-        filtered_text = ', '.join(filtered_tokens)
+        filtered_text = ", ".join(filtered_tokens)
         filtered_text = filtered_text.replace(" (", "(").replace(") ", ")")
         filtered_text = filtered_text.replace("( ", "(").replace(" )", ")")
         filtered_text = filtered_text.replace(" - ", "-")
         return filtered_text
 
+
+    def remove_emoji(self, text):
+        emoji_pattern = re.compile(
+            "["
+            u"\U0001F300-\U0001F5FF"  # symbols & pictographs
+            u"\U0001F600-\U0001F64F"  # emoticons
+            u"\U0001F680-\U0001F6FF"  # transport & map symbols
+            u"\U0001F900-\U0001F9FF"  # supplemental symbols & pictographs
+            "]+",
+            flags=re.UNICODE)
+        return emoji_pattern.sub('', str(text), count=0)
+
     def doit(self, input_string, seed=0):
         """Cleans, removes stop words, tokenizes, shuffles, and selectively recombines tokens."""
         random.seed(seed)
 
-        preserved_periods = re.sub(
-            r"\d+\.(?!\d)", ",", input_string)
-        preserved_periods = re.sub(
-            r"(?<!\d)\.|\.(?!\d)", ",", preserved_periods)
-        preserved_periods = re.sub(
-            r"\:(?!\d)", "", preserved_periods)
+        preserved_periods = re.sub(r"\d+\.(?!\d)", ",", input_string)
+        preserved_periods = re.sub(r"(?<!\d)\.|\.(?!\d)", ",",
+                                   preserved_periods)
+        preserved_periods = re.sub(r"\:(?!\d)", "", preserved_periods)
         preserved_periods = re.sub(r"(?<!\w)'(?!\w)", ",", preserved_periods)
         preserved_periods = re.sub(r"(?<!\w)-(?!\w)", ",", preserved_periods)
-        preserved_periods = re.sub(
-            r"\((?![^()]*:)[^()]*\)", ",", preserved_periods)
-        processed_string = (preserved_periods
-                            .replace(";", ",")
-                            .replace("!", ",")
-                            .replace("?", ",")
-                            .replace(" - ", ",")
-                            .replace(": ", " ")
-                            .replace("“", ",")
-                            .replace("”", ",")
-                            .replace("‘", ",")
-                            .replace("’", ",")
-                            .replace("s'", "s")
-                            .replace("*", ",")
-                            .replace("' ", ",")
-                            .replace(" '", ",")
-                            .replace("/", "")
-                            .replace("\\", "")
-                            .replace("[", ",")
-                            .replace("]", ",")
-                            .replace("{", ",")
-                            .replace("}", ",")
-                            .replace("<", "")
-                            .replace(">", "")
-                            .replace("=", "")
-                            .replace("+", "")
-                            .replace("_", " ")
-                            .replace("^", "")
-                            .replace("|", ",")
-                            .replace(", ", ",")
-                            .replace("---", ",")
-                            .replace("--", ",")
-                            .replace(" - ", ",")
-                            .replace("- ", ",")
-                            .replace(" -", ",")
-                            .replace("…", ",")
-                            .replace("=>", ",")
-                            .replace("->", ",")
-                            .replace("\n", ",")
-                            .replace("\"", ",")
-                            .replace(",,", ","))
+        preserved_periods = re.sub(r"\((?![^()]*:)[^()]*\)", ",",
+                                   preserved_periods)
+        processed_string = (preserved_periods.replace(";", ",").replace(
+            "!", ",").replace("?", ",").replace(" - ", ",").replace(
+                ": ", " ").replace("“", ",").replace("”", ",").replace(
+                    "‘", ",").replace("’", ",").replace("s'", "s").replace(
+                        "*",
+                        ",").replace("' ", ",").replace(" '", ",").replace(
+                            "/",
+                            "").replace("\\", "").replace("[", ",").replace(
+                                "]", ",").replace("{", ",").replace(
+                                    "}", ",").replace("<", "").replace(
+                                        ">", "").replace("=", "").replace(
+                                            "+", "").replace("_", " ").replace(
+                                                "^", "").replace(
+                                                    "|", ",").replace(
+                                                        ", ", ",").replace(
+                                                            "---",
+                                                            ",").replace(
+                                                                "--",
+                                                                ",").replace(
+                                                                    " - ", ",")
+                            .replace("- ", ",").replace(
+                                " -",
+                                ",").replace("…", ",").replace(
+                                    "=>", ",").replace(
+                                        "->", ",").replace(
+                                            "\n",
+                                            ",").replace('"', ",").replace(
+                                                "#", ",").replace(
+                                                    "@", ",").replace(
+                                                        "$", ",").replace(
+                                                            "%", ",").replace(
+                                                                "&",
+                                                                ",").replace(
+                                                                    "*", ","))
+
+        processed_string = self.remove_emoji(processed_string)
 
         processed_string = re.sub(r" {2,}", " ", processed_string)
         processed_string = re.sub(r"\s+", " ", processed_string)
 
         tokens = [
-            token.strip().lower()
-            for token in processed_string.split(",")
+            token.strip().lower() for token in processed_string.split(",")
             if token.strip()
         ]
 
@@ -282,13 +302,17 @@ class SrlRandomizeAndFormatString:
         shuffled_tokens = random.sample(tokens, len(tokens))
         print(f"Tokens after shuffling: {shuffled_tokens}")
         tokens_with_parentheses = [
-            token for token in tokens if '(' in token and ')' in token]
+            token for token in tokens if "(" in token and ")" in token
+        ]
         tokens_without_parentheses = [
-            token for token in tokens if token not in tokens_with_parentheses]
+            token for token in tokens if token not in tokens_with_parentheses
+        ]
 
         # Ensure there are no spaces after "(" or before ")"
-        tokens_with_parentheses = [token.replace(
-            " (", "(").replace(") ", ")") for token in tokens_with_parentheses]
+        tokens_with_parentheses = [
+            token.replace(" (", "(").replace(") ", ")")
+            for token in tokens_with_parentheses
+        ]
 
         # Shuffle tokens without parentheses
         random.shuffle(tokens_without_parentheses)
@@ -301,7 +325,7 @@ class SrlRandomizeAndFormatString:
         selected_tokens_without_parentheses = []
         total_length = total_length_with_parentheses
         for token in tokens_without_parentheses:
-            if total_length >= 1804:
+            if total_length >= 3024:
                 break
             selected_tokens_without_parentheses.append(token)
             total_length += len(token)
@@ -311,9 +335,14 @@ class SrlRandomizeAndFormatString:
         random.shuffle(final_tokens)
 
         # Reassemble into a string
-        output_string = ', '.join(final_tokens)
+        output_string = ", ".join(final_tokens)
+        output_string = output_string.replace(
+            ", ,", ",")  # Remove ', ,' in the string
+        # Remove leading and trailing spaces and commas
+        output_string = output_string.strip(", ")
         print(f"Final output string: {output_string}")
         return (output_string, )
+
 
 # A dictionary that contains all nodes you want to export with their names
 # NOTE: names should be globally unique
@@ -323,7 +352,8 @@ NODE_CLASS_MAPPINGS = {
     "SRL Eval": SrlEval,
     "SRL Filter Image List": SrlFilterImageList,
 }
-NODE_CLASS_MAPPINGS["SRL Randomize And Format String"] = SrlRandomizeAndFormatString
+NODE_CLASS_MAPPINGS[
+    "SRL Randomize And Format String"] = SrlRandomizeAndFormatString
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -332,6 +362,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SrlEval": "SRL Eval",
     "SrlFilterImageList": "SRL Filter Image List",
 }
-NODE_DISPLAY_NAME_MAPPINGS["SrlRandomizeAndFormatString"] = (
-    "SRL Randomize And Format String"
-)
+NODE_DISPLAY_NAME_MAPPINGS[
+    "SrlRandomizeAndFormatString"] = "SRL Randomize And Format String"
