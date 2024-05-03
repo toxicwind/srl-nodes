@@ -6,8 +6,8 @@ import re
 import random
 import itertools
 from functools import reduce
+import unicodedata
 import emoji
-
 
 class AnyType(str):
 
@@ -118,6 +118,8 @@ class SrlEval:
     FUNCTION = "doit"
     CATEGORY = "utils"
 
+
+
     def doit(self, parameters, code, **kw):
         # Indent the code for the main body of the function
         func_code = textwrap.indent(code, "    ")
@@ -198,12 +200,21 @@ class SrlRandomizeAndFormatString:
         return {
             "required": {
                 "input_string": ("STRING", {
+                    "multiline": True
+                }),
+                "and_string": ("STRING", {
+                    "default": ",",
                     "multiline": False
                 }),
                 "seed": ("INT", {
                     "default": 0,
                     "min": 0,
                     "max": 0xFFFFFFFFFFFFFFFF
+                }),
+                "max_length": ("INT", {
+                    "default": 1024,
+                    "min": 0,
+                    "max": 999999999
                 }),
             },
         }
@@ -212,33 +223,119 @@ class SrlRandomizeAndFormatString:
     FUNCTION = "doit"
     CATEGORY = "utils"
 
-    def remove_stop_words(self, text):
+
+    def recursive_replace(self, processed_string, words_to_replace):
+        while True:
+            old_processed_string = processed_string
+            for word in words_to_replace:
+                # Only replace if the word is surrounded by spaces or has a space before it
+                processed_string = re.sub(re.escape(word), ",", processed_string)
+            if old_processed_string == processed_string:
+                break
+
+        # Remove consecutive commas
+        processed_string = re.sub(",{2,}", ",", processed_string)
+
+        # Split the string into a list of words
+        words = processed_string.split(',')
+
+        # Randomize the order of the words
+        random.shuffle(words)
+
+        # Join the words back together into a string
+        processed_string = ','.join(words)
+
+        return processed_string
+
+    def remove_stop_words(self, text, and_string=","):
         """Removes stop words from the input text using spaCy."""
-        tokens = text.split(",")
-        filtered_tokens = []
-        for token in tokens:
-            doc = nlp(token)
-            filtered_token = " ".join([t.text for t in doc if not t.is_stop])
-            filtered_tokens.append(filtered_token.strip())
-        filtered_text = ", ".join(filtered_tokens)
-        filtered_text = filtered_text.replace(" (", "(").replace(") ", ")")
-        filtered_text = filtered_text.replace("( ", "(").replace(" )", ")")
-        filtered_text = filtered_text.replace(" - ", "-")
+        AND_STRING = and_string
+        filtered_text = text.replace(" - ", AND_STRING)
+        filtered_text = filtered_text.replace(" -", AND_STRING)
+        filtered_text = filtered_text.replace("- ", AND_STRING)
+        filtered_text = filtered_text.replace(" -", AND_STRING)
         return filtered_text
 
+    def process_string(self, input_string):
+        replacements = {
+            "_": " ",
+            r"\d+\.(?!\d)": ",",
+            r"(?<!\d)\.|\.(?!\d)": ",",
+            r"\:(?!\d)": "",
+            r"(?<!\w)'(?!\w)": ",",
+            r"(?<!\w)-(?!\w)": ",",
+            r"\((?![^()]*:)[^()]*\)": ",",
+            "```": ",",
+            "jsonl": ",",
+            ";": ",",
+            "!": ",",
+            "?": ",",
+            ": ": " ",
+            "“": ",",
+            "”": ",",
+            "‘": ",",
+            "’": ",",
+            "s'": "s",
+            "' ": ",",
+            " '": ",",
+            "/": ",",
+            "\\": ",",
+            "[": ",",
+            "]": ",",
+            "{": ",",
+            "}": ",",
+            "<": "",
+            ">": "",
+            "=": "",
+            "^": "",
+            "|": ",",
+            ", ": ",",
+            "--": ",",
+            " - ": ",",
+            "---": ",",
+            "- ": ",",
+            " -": ",",
+            "…": ",",
+            "=>": ",",
+            "->": ",",
+            "\n": ",",
+            '"': ",",
+            "#": ",",
+            "@": ",",
+            "$": ",",
+            "%": ",",
+            "&": ",",
+            "*": ",",
+            "+": ",",
+            "...": ",",
+            ".": ","
+        }
 
-    def remove_emoji(self, text):
-        emoji_pattern = re.compile(
-            "["
-            u"\U0001F300-\U0001F5FF"  # symbols & pictographs
-            u"\U0001F600-\U0001F64F"  # emoticons
-            u"\U0001F680-\U0001F6FF"  # transport & map symbols
-            u"\U0001F900-\U0001F9FF"  # supplemental symbols & pictographs
-            "]+",
-            flags=re.UNICODE)
-        return emoji_pattern.sub('', str(text), count=0)
+        for pattern, replacement in replacements.items():
+            if pattern.startswith("\\") and len(
+                    pattern) > 6:  # if it's a regex pattern
+                input_string = re.sub(pattern,
+                                    str(replacement),
+                                    input_string,
+                                    flags=re.UNICODE)
+            else:  # if it's a simple string
+                input_string = input_string.replace(pattern, replacement)
 
-    def doit(self, input_string, seed=0):
+        return input_string
+
+    def remove_emoji(self, text: str) -> str:
+        """
+        Removes emoji characters from the input text.
+
+        Args:
+        text (str): The input text containing emoji characters.
+
+        Returns:
+        str: The input text with emoji characters removed.
+        """
+        return ''.join(char for char in text if not emoji.is_emoji(char))
+
+    def doit(self, input_string, and_string, max_length=1024, seed=0):
         """Cleans, removes stop words, tokenizes, shuffles, and selectively recombines tokens."""
         random.seed(seed)
 
@@ -286,10 +383,22 @@ class SrlRandomizeAndFormatString:
                                                                     "*", ","))
 
         processed_string = self.remove_emoji(processed_string)
-
+        processed_string = self.remove_stop_words(processed_string, and_string)
         processed_string = re.sub(r" {2,}", " ", processed_string)
         processed_string = re.sub(r"\s+", " ", processed_string)
+        words_to_replace = [
+            "keyword", "keywords", "main keyword", "main keywords", "tags",
+            "interesting tags", "sentence", "sentence fragment", "detail",
+            "details", "micro level", "micro level details", "micro details",
+            "components", "prompt", "input", "dall-e prompt", "dall-e", "\\",
+            "/}"
+        ]
 
+        # Sort the list in descending order by length
+        words_to_replace.sort(key=len, reverse=True)
+
+        processed_string = self.recursive_replace(processed_string,
+                                                  words_to_replace)
         tokens = [
             token.strip().lower() for token in processed_string.split(",")
             if token.strip()
@@ -325,7 +434,7 @@ class SrlRandomizeAndFormatString:
         selected_tokens_without_parentheses = []
         total_length = total_length_with_parentheses
         for token in tokens_without_parentheses:
-            if total_length >= 3024:
+            if total_length >= max_length:
                 break
             selected_tokens_without_parentheses.append(token)
             total_length += len(token)
