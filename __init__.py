@@ -338,60 +338,101 @@ class SrlRandomizeAndFormatString:
     def doit(self, input_string, and_string, max_length=1024, seed=0):
         """Cleans, removes stop words, tokenizes, shuffles, and selectively recombines tokens."""
         random.seed(seed)
+        # "," and then remove all commas
+        input_string = input_string.replace(",", "")
 
+        # Preserve periods that are part of a number and replace others with ","
         preserved_periods = re.sub(r"\d+\.(?!\d)", ",", input_string)
-        preserved_periods = re.sub(r"(?<!\d)\.|\.(?!\d)", ",",
-                                   preserved_periods)
-        preserved_periods = re.sub(r"\:(?!\d)", "", preserved_periods)
+        preserved_periods = re.sub(r"(?<!\d)\.|\.(?!\d)", ",", preserved_periods)
+
+        # Replace colons that stand alone with ','
+        preserved_periods = re.sub(r"(?<=\s):(?=\s)", ",", preserved_periods)
+
+        # Replace colons with an alpha character before but not a number character after with ' '
+        preserved_periods = re.sub(r"(?<=[a-zA-Z]):(?!\d)", " ", preserved_periods)
+
+        # Replace remaining colons with comma
+        preserved_periods = preserved_periods.replace(":", ",")
+        preserved_periods = preserved_periods.replace("s'", "s")
+        # Replace standalone apostrophes, hyphens, and text within parentheses with ","
         preserved_periods = re.sub(r"(?<!\w)'(?!\w)", ",", preserved_periods)
         preserved_periods = re.sub(r"(?<!\w)-(?!\w)", ",", preserved_periods)
-        preserved_periods = re.sub(r"\((?![^()]*:)[^()]*\)", ",",
-                                   preserved_periods)
-        processed_string = (preserved_periods.replace(";", ",").replace(
-            "!", ",").replace("?", ",").replace(" - ", ",").replace(
-                ": ", " ").replace("“", ",").replace("”", ",").replace(
-                    "‘", ",").replace("’", ",").replace("s'", "s").replace(
-                        "*",
-                        ",").replace("' ", ",").replace(" '", ",").replace(
-                            "/",
-                            "").replace("\\", "").replace("[", ",").replace(
-                                "]", ",").replace("{", ",").replace(
-                                    "}", ",").replace("<", "").replace(
-                                        ">", "").replace("=", "").replace(
-                                            "+", "").replace("_", " ").replace(
-                                                "^", "").replace(
-                                                    "|", ",").replace(
-                                                        ", ", ",").replace(
-                                                            "---",
-                                                            ",").replace(
-                                                                "--",
-                                                                ",").replace(
-                                                                    " - ", ",")
-                            .replace("- ", ",").replace(
-                                " -",
-                                ",").replace("…", ",").replace(
-                                    "=>", ",").replace(
-                                        "->", ",").replace(
-                                            "\n",
-                                            ",").replace('"', ",").replace(
-                                                "#", ",").replace(
-                                                    "@", ",").replace(
-                                                        "$", ",").replace(
-                                                            "%", ",").replace(
-                                                                "&",
-                                                                ",").replace(
-                                                                    "*", ","))
+        preserved_periods = re.sub(r"(?<!\s)'(?!\s)", "", preserved_periods)
+        preserved_periods = re.sub(r"(?<!\s)-(?!\s)", "", preserved_periods)
 
+        # Replace "(" and ")" with "," if there is no colon followed by a number within
+        preserved_periods = re.sub(r"\(([^():]*)(?![^()]*:\d)[^()]*\)", ",", preserved_periods)
+
+        # Create processed_string from preserved_periods for further replacements
+        processed_string = preserved_periods
+
+        # Replace various punctuation and symbols
+        processed_string = processed_string.replace(";", ",")
+        processed_string = processed_string.replace("!", ",")
+        processed_string = processed_string.replace("?", ",")
+        processed_string = processed_string.replace("“", ",")
+        processed_string = processed_string.replace("”", ",")
+        processed_string = processed_string.replace('"', ",")
+        processed_string = processed_string.replace("‘", ",")
+        processed_string = processed_string.replace("’", ",")
+        processed_string = processed_string.replace("[", ",")
+        processed_string = processed_string.replace("]", ",")
+        processed_string = processed_string.replace("{", ",")
+        processed_string = processed_string.replace("}", ",")
+        processed_string = processed_string.replace("|", ",")
+        processed_string = processed_string.replace("#", ",")
+        processed_string = processed_string.replace("@", ",")
+        processed_string = processed_string.replace("$", ",")
+        processed_string = processed_string.replace("%", ",")
+        processed_string = processed_string.replace("&", ",")
+        processed_string = processed_string.replace("*", ",")
+        processed_string = processed_string.replace(" - ", ",")
+        processed_string = processed_string.replace("---", ",")
+        processed_string = processed_string.replace("--", ",")
+        processed_string = processed_string.replace("- ", ",")
+        processed_string = processed_string.replace(" -", ",")
+        processed_string = processed_string.replace("…", ",")
+        processed_string = processed_string.replace("...", ",")
+        processed_string = processed_string.replace("..", ",")
+        processed_string = processed_string.replace(".", ",")
+        processed_string = processed_string.replace("=>", ",")
+        processed_string = processed_string.replace("->", ",")
+        processed_string = processed_string.replace('\n', ",")
+        processed_string = processed_string.replace("' ", ",")
+        processed_string = processed_string.replace(" '", ",")
+        processed_string = processed_string.replace("/", "")
+        processed_string = processed_string.replace('\\', "")
+        processed_string = processed_string.replace("<", "")
+        processed_string = processed_string.replace(">", "")
+        processed_string = processed_string.replace("=", "")
+        processed_string = processed_string.replace("+", "")
+        processed_string = processed_string.replace("_", " ")
+        processed_string = processed_string.replace("^", "")
+        
+        # Remove emojis and stop words
         processed_string = self.remove_emoji(processed_string)
         processed_string = self.remove_stop_words(processed_string, and_string)
+
+        # Final cleanup to remove extra spaces
         processed_string = re.sub(r" {2,}", " ", processed_string)
         processed_string = re.sub(r"\s+", " ", processed_string)
         words_to_replace = [
-            "keyword", "keywords", "main keyword", "main keywords", "tags",
+            "Here are the","JSONL entries that merge", "join the","provided keywords into","a", "unique visual description", ",ed", ", ed", " ed,",
+            "here is the output", "here is the output of", "output",
+            "micro level expanded visual representation",
+            "micro level expanded visual", "expanded visual", "expanded",
+            "visual", "expanded visual representation", "representation",
+            "micro level representation", "micro level visual", "micro level",
+            "micro", "level", "expanded representation", "keyword", "keywords",
+            "main keyword", "main keywords", "tags", "tag", "interesting tag",
             "interesting tags", "sentence", "sentence fragment", "detail",
-            "details", "micro level", "micro level details", "micro details",
-            "components", "prompt", "input", "dall-e prompt", "dall-e", "\\",
-            "/}"
+            "details", "micro level", "interesting tags", "sentence",
+            "sentence fragment", "detail", "details", "micro level",
+            "micro level details", "micro details", "components", "prompt",
+            "input", "dall-e prompt", "dall-e", "\\", "dall-e input",
+            "dall-e prompt", "dall-e input", "dall-e prompt", "comma",
+            "comma separated", "comma separated list",
+            "comma separated list of", "/}"
         ]
 
         # Sort the list in descending order by length
@@ -422,6 +463,10 @@ class SrlRandomizeAndFormatString:
             token.replace(" (", "(").replace(") ", ")")
             for token in tokens_with_parentheses
         ]
+        
+        # Filter out tokens longer than 65 characters or shorter than 3 characters
+        tokens_with_parentheses = [token for token in tokens_with_parentheses if 3 <= len(token) <= 65]
+        tokens_without_parentheses = [token for token in tokens_without_parentheses if 3 <= len(token) <= 65]
 
         # Shuffle tokens without parentheses
         random.shuffle(tokens_without_parentheses)
@@ -443,10 +488,9 @@ class SrlRandomizeAndFormatString:
         final_tokens = tokens_with_parentheses + selected_tokens_without_parentheses
         random.shuffle(final_tokens)
 
-        # Reassemble into a string
-        output_string = ", ".join(final_tokens)
-        output_string = output_string.replace(
-            ", ,", ",")  # Remove ', ,' in the string
+        # Filter out empty strings and join into a string
+        output_string = ", ".join(token for token in final_tokens if token)
+        
         # Remove leading and trailing spaces and commas
         output_string = output_string.strip(", ")
         print(f"Final output string: {output_string}")
