@@ -1,6 +1,8 @@
 !/input/example.png
 !/web/extensions/core/
 !/web/extensions/logging.js.example
+**/*.py[cod]
+**/__pycache__/
 *.ckpt
 *.h5
 *.joblib
@@ -17,6 +19,7 @@
 *.tflite
 *.webp
 .idea/
+.vs
 /.vs
 /input/
 /models/
@@ -31,3 +34,4 @@ __pycache__/
 custom_nodes/
 extra_model_paths.yaml
 venv/
+workspace*/
