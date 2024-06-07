@@ -527,6 +527,7 @@ class SrlExtractJson:
             ('\\', ' and '),
             (':', ','),
             ('"', ','),
+            ('.', ','),
             ('[', ','),
             (']', ','),
             ('{', ','),
@@ -540,7 +541,7 @@ class SrlExtractJson:
             ('<', ' less than '),
             ('>', ' greater than '),
             ('=', ' equals '),
-            ('*', ''),
+            ('*', ' '),
             ('\n', ','),
         ]
 
@@ -564,8 +565,6 @@ class SrlExtractJson:
         print("Extracted values: ")
         for i, v in enumerate(values, start=1):
             print(f"{i}: {v}")
-        # Process values: remove emojis, special characters, stop words, duplicates
-        values = [re.sub(r'[^\w\s]', '', self.remove_emoji(v)) for v in values]
         if remove_stop_words:
             print("Values before removing stop words: ")
             for i, v in enumerate(values, start=1):
@@ -594,17 +593,28 @@ class SrlExtractJson:
             for value in values
             if min_part_length <= len(value) <= max_part_length
         ]
-        # Find the midpoint
-        midpoint = len(values) // 2
-
-        # Split the values into short and long
-        short_values = values[:midpoint]
-        long_values = values[midpoint:]
-
+        # Calculate the total length of all values
+        total_length = sum(len(v) for v in values)
+        
+        # Find the midpoint based on total length
+        midpoint = total_length // 2
+        
+        # Initialize counters and lists
+        current_length = 0
+        short_values = []
+        long_values = []
+        
+        # Split the values into short and long based on cumulative length
+        for v in values:
+            current_length += len(v)
+            if current_length <= midpoint:
+                short_values.append(v)
+            else:
+                long_values.append(v)
+        
         # Determine the number of values to select from each list
-        num_short = min(len(short_values), int(max_length * 0.7))
+        num_short = min(len(short_values), int(max_length * 0.8))
         num_long = min(len(long_values), max_length - num_short)
-
         # Randomly select values from each list
         selected_short_values = random.sample(short_values, num_short)
         selected_long_values = random.sample(long_values, num_long)
@@ -615,7 +625,8 @@ class SrlExtractJson:
         values.sort(key=len, reverse=True)
         # remove duplicate values
         values = list(dict.fromkeys(values))
-
+        #shuffle values
+        random.shuffle(values)
         print(
             "Value count after removing duplicates and filtering by length: ",
             len(values))
