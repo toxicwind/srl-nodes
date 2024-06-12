@@ -593,10 +593,31 @@ class SrlExtractJson:
             for value in values
             if min_part_length <= len(value) <= max_part_length
         ]
+<<<<<<< Updated upstream
+=======
+        # Find the midpoint
+        midpoint = len(values) // 2
+
+        # Split the values into short and long
+        short_values = values[:midpoint]
+        long_values = values[midpoint:]
+
+        # Determine the number of values to select from each list
+        num_short = min(len(short_values), int(max_length * 0.8))
+        num_long = min(len(long_values), max_length - num_short)
+
+        # Randomly select values from each list
+        selected_short_values = random.sample(short_values, num_short)
+        selected_long_values = random.sample(long_values, num_long)
+
+        # Combine the selected values
+        selected_values = selected_short_values + selected_long_values
+>>>>>>> Stashed changes
         #sort values
         values.sort(key=len, reverse=True)
         # remove duplicate values
         values = list(dict.fromkeys(values))
+<<<<<<< Updated upstream
         random.shuffle(values)
         # Calculate the total length of all values
         total_length = sum(len(v) for v in values)
@@ -628,6 +649,8 @@ class SrlExtractJson:
 
         # Combine the selected values
         selected_values = selected_short_values + ([selected_long_value] if selected_long_value else [])
+=======
+>>>>>>> Stashed changes
         #shuffle values
         random.shuffle(values)
         print(
