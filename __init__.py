@@ -618,6 +618,7 @@ class SrlExtractJson:
         # remove duplicate values
         values = list(dict.fromkeys(values))
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
         random.shuffle(values)
         # Calculate the total length of all values
         total_length = sum(len(v) for v in values)
@@ -649,6 +650,8 @@ class SrlExtractJson:
 
         # Combine the selected values
         selected_values = selected_short_values + ([selected_long_value] if selected_long_value else [])
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
         #shuffle values
