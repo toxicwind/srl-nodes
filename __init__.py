@@ -593,8 +593,7 @@ class SrlExtractJson:
             for value in values
             if min_part_length <= len(value) <= max_part_length
         ]
-<<<<<<< Updated upstream
-=======
+        print("Value count after filtering by length: ", len(values))
         # Find the midpoint
         midpoint = len(values) // 2
 
@@ -612,50 +611,11 @@ class SrlExtractJson:
 
         # Combine the selected values
         selected_values = selected_short_values + selected_long_values
->>>>>>> Stashed changes
         #sort values
         values.sort(key=len, reverse=True)
         # remove duplicate values
         values = list(dict.fromkeys(values))
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-        random.shuffle(values)
-        # Calculate the total length of all values
-        total_length = sum(len(v) for v in values)
 
-        # Find the midpoint based on total length
-        midpoint = total_length // 2
-
-        # Initialize counters and lists
-        current_length = 0
-        short_values = []
-        long_values = []
-
-        # Split the values into short and long based on cumulative length
-        for v in values:
-            current_length += len(v)
-            if current_length <= midpoint:
-                short_values.append(v)
-            else:
-                long_values.append(v)
-
-        # Determine the number of values to select from each list
-        num_short = min(len(short_values), max_length - 1)
-
-        # Randomly select values from short list
-        selected_short_values = random.sample(short_values, num_short)
-
-        # Randomly select one value from long list
-        selected_long_value = random.choice(long_values) if long_values else None
-
-        # Combine the selected values
-        selected_values = selected_short_values + ([selected_long_value] if selected_long_value else [])
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-        #shuffle values
-        random.shuffle(values)
         print(
             "Value count after removing duplicates and filtering by length: ",
             len(values))
